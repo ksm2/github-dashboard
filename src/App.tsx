@@ -1,23 +1,41 @@
-import { useState } from 'react';
-import logo from './logo.svg';
+import { useEffect, useState } from 'react';
 import './App.css';
+import { useOctokit } from './OctokitProvider.js';
+
+interface Repo {
+  name: string;
+  html_url: string;
+}
 
 function App() {
-  const [count, setCount] = useState(0);
+  const octokit = useOctokit();
+  const [repos, setRepos] = useState<Repo[]>([]);
+
+  useEffect(() => {
+    octokit.rest.repos
+      .listForOrg({ org: import.meta.env.GITHUB_ORGA })
+      .then(({ data }) => data)
+      .then((repos) => {
+        setRepos(repos);
+        repos.forEach((repo) => {
+          octokit.rest.pulls
+            .list({ owner: repo.owner.login, repo: repo.name })
+            .then(({ data }) => console.log(data));
+        });
+      });
+  }, []);
 
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>Hello Vite + React!</p>
-        <p>
-          <button type="button" onClick={() => setCount((count) => count + 1)}>
-            count is: {count}
-          </button>
-        </p>
-        <p>
-          Edit <code>App.tsx</code> and save to test HMR updates.
-        </p>
+        <p>Hello PRs!</p>
+        <ul>
+          {repos.map((repo) => (
+            <li key={repo.name}>
+              <a href={repo.html_url}>{repo.name}</a>
+            </li>
+          ))}
+        </ul>
         <p>
           <a
             className="App-link"
