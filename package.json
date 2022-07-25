@@ -4,7 +4,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "npm run test:prettier",
+    "test:prettier": "prettier --check index.html **/*.{ts,tsx,css}"
   },
   "dependencies": {
     "react": "^17.0.2",
@@ -14,7 +16,14 @@
     "@types/react": "^17.0.33",
     "@types/react-dom": "^17.0.10",
     "@vitejs/plugin-react": "^1.0.7",
+    "prettier": "^2.7.1",
     "typescript": "^4.4.4",
     "vite": "^2.7.2"
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "quoteProps": "consistent",
+    "printWidth": 100,
+    "singleQuote": true
   }
 }
