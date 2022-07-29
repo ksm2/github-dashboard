@@ -1,0 +1,15 @@
+.StatusIcon.Approved {
+  color: #00b300;
+}
+
+.StatusIcon.Open {
+  color: slategray;
+}
+
+.StatusIcon.InReview {
+  color: darkgoldenrod;
+}
+
+.StatusIcon.ChangesRequested {
+  color: #dc1212;
+}

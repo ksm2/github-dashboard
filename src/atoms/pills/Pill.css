@@ -1,0 +1,42 @@
+.Pill {
+  outline: 0;
+  background: #cde0ff;
+  border: 1px solid #3362ae;
+  padding: 0.5rem 1rem;
+  border-radius: 99999rem;
+  cursor: pointer;
+  transition: box-shadow 0.1s;
+}
+
+.Pill:focus {
+  box-shadow: 0 0 0 0.25rem #a5c7ff;
+}
+
+.Pill:hover {
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+.Pill.selected {
+  background: #3f89ff;
+  border-color: #0d4295;
+  color: white;
+}
+
+.Pill.selected:hover {
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  .Pill {
+    color: white;
+    background: #0e316a;
+  }
+
+  .Pill:focus {
+    box-shadow: 0 0 0 0.25rem #1b468b;
+  }
+
+  .Pill.selected {
+    border-color: #b5cbee;
+  }
+}

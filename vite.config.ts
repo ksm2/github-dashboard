@@ -1,6 +1,7 @@
-import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import * as path from 'node:path';
 import * as process from 'node:process';
+import { defineConfig, loadEnv } from 'vite';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -11,6 +12,11 @@ export default defineConfig(({ mode }) => {
     define: {
       'import.meta.env.GITHUB_TOKEN': JSON.stringify(env.GITHUB_TOKEN),
       'import.meta.env.GITHUB_ORGA': JSON.stringify(env.GITHUB_ORGA),
+    },
+    resolve: {
+      alias: {
+        '~': path.resolve(__dirname, 'src'),
+      },
     },
   };
 });

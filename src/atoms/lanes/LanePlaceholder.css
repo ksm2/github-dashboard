@@ -1,0 +1,22 @@
+.LanePlaceholder {
+  display: flex;
+  flex-flow: column nowrap;
+
+  margin: auto;
+  align-items: center;
+  width: 12rem;
+  text-align: center;
+  opacity: 0.4;
+  line-height: 1.5;
+  user-select: none;
+}
+
+.LanePlaceholder > .icon {
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 0.5rem;
+}
+
+.LanePlaceholder > p {
+  font-size: 120%;
+}

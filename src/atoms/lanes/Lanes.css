@@ -1,0 +1,8 @@
+.Lanes {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 1rem;
+
+  flex: 1;
+}

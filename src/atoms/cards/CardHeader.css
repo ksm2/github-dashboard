@@ -1,0 +1,23 @@
+.CardHeader {
+  display: flex;
+  flex-direction: row;
+  gap: 0.25rem;
+  align-items: center;
+
+  flex: 0;
+  min-width: 0;
+  font-size: 120%;
+}
+
+.CardHeader > .icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.CardHeader > h2 {
+  flex: 1;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}

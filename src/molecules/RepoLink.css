@@ -1,0 +1,21 @@
+.RepoLink {
+  display: inline-flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: 0.25rem;
+
+  flex: 1;
+  min-width: 0;
+}
+
+.RepoLink > p {
+  flex: 1;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.RepoLink:hover {
+  text-decoration: underline;
+}

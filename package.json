@@ -6,10 +6,12 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "npm run test:prettier",
-    "test:prettier": "prettier --check index.html **/*.{ts,tsx,css}"
+    "test:prettier": "prettier --check index.html **/*.{ts,tsx,css}",
+    "fix:prettier": "prettier --write index.html **/*.{ts,tsx,css}"
   },
   "dependencies": {
     "@octokit/rest": "^19.0.3",
+    "classnames": "^2.3.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2"
   },

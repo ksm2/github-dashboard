@@ -1,0 +1,5 @@
+.PillMenu {
+  display: flex;
+  flex-flow: row nowrap;
+  gap: 0.5rem;
+}
