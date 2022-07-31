@@ -8,7 +8,7 @@ import { PullRequestService } from './model/PullRequestService.js';
 const app = fastify({ logger: true });
 const prSvc: PullRequestService = new GithubGateway(
   new GithubClient(env.GITHUB_TOKEN),
-  env.GITHUB_ORGA,
+  env.GITHUB_ORG,
 );
 
 app.get('/filters', async (req, res) => {
