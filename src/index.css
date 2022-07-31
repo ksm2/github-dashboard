@@ -46,6 +46,6 @@ button {
 @media (prefers-color-scheme: dark) {
   body {
     color: white;
-    background: black;
+    background: #121313;
   }
 }
