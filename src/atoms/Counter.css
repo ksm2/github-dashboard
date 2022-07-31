@@ -1,0 +1,14 @@
+.Counter {
+  display: inline-block;
+  background-color: #a5c7ff;
+  border-radius: 99999rem;
+  padding: 0 0.75rem;
+  font-size: 120%;
+  font-weight: bold;
+}
+
+@media (prefers-color-scheme: dark) {
+  .Counter {
+    background-color: #0d4295;
+  }
+}
