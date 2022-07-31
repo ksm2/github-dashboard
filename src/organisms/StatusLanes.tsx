@@ -7,7 +7,7 @@ import { intersects } from '~/utils/intersects.js';
 
 export function StatusLanes() {
   const filters = useAppSelector((state) => state.filter.enabled);
-  const { data: pullRequests = [] } = useGetPullRequestsQuery();
+  const { data: pullRequests = [] } = useGetPullRequestsQuery(undefined, { refetchOnFocus: true });
   const filteredPullRequests = pullRequests.filter(
     (pr) => !filters.length || intersects(pr.filters, filters),
   );
