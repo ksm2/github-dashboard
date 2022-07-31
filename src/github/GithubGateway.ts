@@ -34,7 +34,7 @@ export class GithubGateway implements PullRequestService {
               href: repo.html_url,
               name: repo.name,
             },
-            commentCounter: 0,
+            commentCounter: await this.countComments(repo, pr),
             author: {
               href: pr.user!.html_url,
               name: pr.user!.login,
@@ -91,5 +91,11 @@ export class GithubGateway implements PullRequestService {
       (r) => r.user!.login,
       (r1, r2) => new Date(r2.submitted_at!).getTime() - new Date(r1.submitted_at!).getTime(),
     );
+  }
+
+  private async countComments(repository: GitHubRepo, pr: GitHubPullRequest): Promise<number> {
+    const comments = await this.client.loadPullRequestReviewComments(repository, pr);
+    const issueComments = await this.client.loadPullRequestComments(repository, pr);
+    return comments.length + issueComments.length;
   }
 }

@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { GitHubPullRequest, GitHubRepo, GitHubReview, GitHubTeam } from './types.js';
+import { GitHubComment, GitHubPullRequest, GitHubRepo, GitHubReview, GitHubTeam } from './types.js';
 
 export class GithubClient {
   private readonly octokit: Octokit;
@@ -22,6 +22,25 @@ export class GithubClient {
   async loadPullRequests(repo: GitHubRepo): Promise<GitHubPullRequest[]> {
     const owner = repo.owner.login;
     const response = await this.octokit.rest.pulls.list({ owner, repo: repo.name });
+    return response.data;
+  }
+
+  async loadPullRequestReviewComments(
+    repository: GitHubRepo,
+    pr: GitHubPullRequest,
+  ): Promise<GitHubComment[]> {
+    const owner = repository.owner.login;
+    const repo = repository.name;
+    const pull_number = pr.number;
+    const response = await this.octokit.rest.pulls.listReviewComments({ owner, repo, pull_number });
+    return response.data;
+  }
+
+  async loadPullRequestComments(repository: GitHubRepo, pr: GitHubPullRequest): Promise<unknown[]> {
+    const owner = repository.owner.login;
+    const repo = repository.name;
+    const issue_number = pr.number;
+    const response = await this.octokit.rest.issues.listComments({ owner, repo, issue_number });
     return response.data;
   }
 
