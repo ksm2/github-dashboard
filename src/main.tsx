@@ -1,14 +1,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { Provider } from 'react-redux';
 import './index.css';
+import { store } from '~/redux/store.js';
 import { App } from './App';
-import { OctokitProvider } from './OctokitProvider.js';
 
 ReactDOM.render(
   <React.StrictMode>
-    <OctokitProvider>
+    <Provider store={store}>
       <App />
-    </OctokitProvider>
+    </Provider>
   </React.StrictMode>,
   document.getElementById('root'),
 );
