@@ -1,5 +1,5 @@
 import { GithubClient } from './GithubClient.js';
-import { GitHubPullRequest, GitHubRepo, GitHubReview } from './types.js';
+import { GitHubPullRequest, GitHubRepo, GitHubReview, GitHubTeam } from './types.js';
 import { groupBy } from '../utils/groupBy.js';
 import { Status } from '../model/Status.js';
 import { PullRequest } from '../model/PullRequest.js';
@@ -8,6 +8,7 @@ import { PullRequestService } from '../model/PullRequestService.js';
 interface GitHubRepoPullRequest {
   repo: GitHubRepo;
   pulls: GitHubPullRequest[];
+  teams: GitHubTeam[];
 }
 
 export class GithubGateway implements PullRequestService {
@@ -22,7 +23,7 @@ export class GithubGateway implements PullRequestService {
   async loadPullRequests(): Promise<PullRequest[]> {
     const repositories = await this.loadPulls();
     return Promise.all(
-      repositories.flatMap(({ repo, pulls }) => {
+      repositories.flatMap(({ repo, pulls, teams }) => {
         return pulls.map(
           async (pr): Promise<PullRequest> => ({
             href: pr.html_url,
@@ -39,6 +40,7 @@ export class GithubGateway implements PullRequestService {
               name: pr.user!.login,
               avatarSrc: pr.user!.avatar_url,
             },
+            teams: teams.map((team) => team.name),
           }),
         );
       }),
@@ -50,9 +52,11 @@ export class GithubGateway implements PullRequestService {
       .loadRepositories(this.org)
       .then((repos) =>
         Promise.all(
-          repos.map((repo) =>
-            this.client.loadPullRequests(repo).then((pulls) => ({ repo, pulls })),
-          ),
+          repos.map(async (repo) => {
+            const teams = await this.client.loadRepositoryTeams(repo);
+            const pulls = await this.client.loadPullRequests(repo);
+            return { repo, pulls, teams };
+          }),
         ),
       )
       .then((repos) => repos.flat());

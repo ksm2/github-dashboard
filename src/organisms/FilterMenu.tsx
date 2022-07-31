@@ -12,11 +12,11 @@ export function FilterMenu() {
   const { data: filters = [] } = useGetFiltersQuery();
 
   function onPillClick(filter: Filter) {
-    const enabled = enabledFilters.includes(filter.name);
+    const enabled = enabledFilters.includes(filter.id);
     if (enabled) {
-      dispatch(disable(filter.name));
+      dispatch(disable(filter.id));
     } else {
-      dispatch(enable(filter.name));
+      dispatch(enable(filter.id));
     }
   }
 
@@ -25,7 +25,7 @@ export function FilterMenu() {
       {filters.map((filter, index) => (
         <Pill
           key={index}
-          selected={enabledFilters.includes(filter.name)}
+          selected={enabledFilters.includes(filter.id)}
           onClick={() => onPillClick(filter)}
         >
           {filter.name}

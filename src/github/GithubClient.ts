@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { GitHubPullRequest, GitHubRepo, GitHubReview } from './types.js';
+import { GitHubPullRequest, GitHubRepo, GitHubReview, GitHubTeam } from './types.js';
 
 export class GithubClient {
   private readonly octokit: Octokit;
@@ -10,6 +10,12 @@ export class GithubClient {
 
   async loadRepositories(org: string): Promise<GitHubRepo[]> {
     const response = await this.octokit.rest.repos.listForOrg({ org });
+    return response.data;
+  }
+
+  async loadRepositoryTeams(repo: GitHubRepo): Promise<GitHubTeam[]> {
+    const owner = repo.owner.login;
+    const response = await this.octokit.rest.repos.listTeams({ owner, repo: repo.name });
     return response.data;
   }
 
