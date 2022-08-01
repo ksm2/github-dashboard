@@ -1,4 +1,7 @@
+import fastifyStatic from '@fastify/static';
 import fastify from 'fastify';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as uuid from 'uuid';
 import { FilterablePullRequest } from '~/model/FilterablePullRequest.js';
 import { PullRequest } from '~/model/PullRequest.js';
@@ -18,11 +21,21 @@ const prSvc: PullRequestService = new GithubGateway(
 
 const filters = env.FILTERS.map((cfg): Filter => ({ ...cfg, id: uuid.v4() }));
 
-app.get('/filters', async (req, res) => {
+const dirName = path.dirname(fileURLToPath(import.meta.url));
+app.register(fastifyStatic, {
+  root: path.join(dirName, '../dist/assets/'),
+  prefix: '/assets/',
+});
+
+app.get('/', async (req, res) => {
+  return res.sendFile('index.html', path.join(dirName, '../dist/'));
+});
+
+app.get('/api/filters', async (req, res) => {
   res.send(filters.map(({ id, name }) => ({ id, name })));
 });
 
-app.get('/pull-requests', async (req, res) => {
+app.get('/api/pull-requests', async (req, res) => {
   const pullRequests = await prSvc.loadPullRequests();
   const pullRequestsWithFilters = pullRequests.map((pr): FilterablePullRequest => {
     const f = filters.filter((filter) => appliesToPullRequest(filter, pr)).map((f) => f.id);
