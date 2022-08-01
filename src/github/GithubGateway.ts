@@ -1,9 +1,9 @@
-import { GithubClient } from './GithubClient.js';
-import { GitHubPullRequest, GitHubRepo, GitHubReview, GitHubTeam } from './types.js';
-import { groupBy } from '../utils/groupBy.js';
-import { Status } from '../model/Status.js';
 import { PullRequest } from '../model/PullRequest.js';
 import { PullRequestService } from '../model/PullRequestService.js';
+import { Status } from '../model/Status.js';
+import { groupBy } from '../utils/groupBy.js';
+import { GithubClient } from './GithubClient.js';
+import { GitHubPullRequest, GitHubRepo, GitHubReview, GitHubTeam } from './types.js';
 
 interface GitHubRepoPullRequest {
   repo: GitHubRepo;
@@ -14,10 +14,20 @@ interface GitHubRepoPullRequest {
 export class GithubGateway implements PullRequestService {
   private readonly client: GithubClient;
   private readonly org: string;
+  private cachedRepos?: GitHubRepo[];
+  private lastReposUpdate?: number;
 
   constructor(client: GithubClient, org: string) {
     this.client = client;
     this.org = org;
+  }
+
+  private static groupReviews(reviews: GitHubReview[]): Map<string, GitHubReview> {
+    return groupBy(
+      reviews,
+      (r) => r.user!.login,
+      (r1, r2) => new Date(r2.submitted_at!).getTime() - new Date(r1.submitted_at!).getTime(),
+    );
   }
 
   async loadPullRequests(): Promise<PullRequest[]> {
@@ -48,18 +58,28 @@ export class GithubGateway implements PullRequestService {
   }
 
   private async loadPulls(): Promise<GitHubRepoPullRequest[]> {
-    return this.client
-      .loadRepositories(this.org)
-      .then((repos) =>
-        Promise.all(
-          repos.map(async (repo) => {
-            const teams = await this.client.loadRepositoryTeams(repo);
-            const pulls = await this.client.loadPullRequests(repo);
-            return { repo, pulls, teams };
-          }),
-        ),
-      )
-      .then((repos) => repos.flat());
+    const repos = await this.getRepositories();
+    const items = await Promise.all(
+      repos.map(async (repo) => {
+        const teams = await this.client.loadRepositoryTeams(repo);
+        const pulls = await this.client.loadPullRequests(repo);
+        return { repo, pulls, teams };
+      }),
+    );
+    return items.flat();
+  }
+
+  private async getRepositories(): Promise<GitHubRepo[]> {
+    const ONE_HOUR = 1000 * 60 * 60;
+    if (
+      !this.cachedRepos ||
+      !this.lastReposUpdate ||
+      Date.now() - this.lastReposUpdate > ONE_HOUR
+    ) {
+      this.cachedRepos = await this.client.loadRepositories(this.org);
+      this.lastReposUpdate = Date.now();
+    }
+    return this.cachedRepos;
   }
 
   private async determineStatus(repository: GitHubRepo, pr: GitHubPullRequest): Promise<Status> {
@@ -83,14 +103,6 @@ export class GithubGateway implements PullRequestService {
     }
 
     return Status.IN_REVIEW;
-  }
-
-  private static groupReviews(reviews: GitHubReview[]): Map<string, GitHubReview> {
-    return groupBy(
-      reviews,
-      (r) => r.user!.login,
-      (r1, r2) => new Date(r2.submitted_at!).getTime() - new Date(r1.submitted_at!).getTime(),
-    );
   }
 
   private async countComments(repository: GitHubRepo, pr: GitHubPullRequest): Promise<number> {
