@@ -14,9 +14,13 @@ export class GithubClient {
   }
 
   async loadRepositoryTeams(repo: GitHubRepo): Promise<GitHubTeam[]> {
-    const owner = repo.owner.login;
-    const response = await this.octokit.rest.repos.listTeams({ owner, repo: repo.name });
-    return response.data;
+    try {
+      const owner = repo.owner.login;
+      const response = await this.octokit.rest.repos.listTeams({ owner, repo: repo.name });
+      return response.data;
+    } catch (err) {
+      return [];
+    }
   }
 
   async loadPullRequests(repo: GitHubRepo): Promise<GitHubPullRequest[]> {
