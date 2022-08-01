@@ -7,6 +7,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "start": "ts-node src/server.ts",
+    "start:prod": "ts-node-transpile-only src/server.ts",
     "test": "npm run test:prettier",
     "test:prettier": "prettier --check index.html **/*.{ts,tsx,css}",
     "fix:prettier": "prettier --write index.html **/*.{ts,tsx,css}"
