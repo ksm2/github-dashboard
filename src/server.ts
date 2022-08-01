@@ -1,31 +1,31 @@
-import fastifyStatic from '@fastify/static';
-import fastify from 'fastify';
+import express from 'express';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as uuid from 'uuid';
-import { FilterablePullRequest } from '~/model/FilterablePullRequest.js';
-import { PullRequest } from '~/model/PullRequest.js';
+import { Logger } from './Logger.js';
 import * as env from './env.js';
 import { GithubClient } from './github/GithubClient.js';
 import { GithubGateway } from './github/GithubGateway.js';
+import { FilterablePullRequest } from './model/FilterablePullRequest.js';
 import { Condition, FilterConfig } from './model/FilterConfig.js';
 import { PullRequestService } from './model/PullRequestService.js';
+import { Repository } from './model/Repository.js';
+import { RepositoryStorage } from './RepositoryStorage.js';
 
 type Filter = FilterConfig & { id: string };
 
-const app = fastify({ logger: true });
+const app = express();
+const logger = new Logger();
 const prSvc: PullRequestService = new GithubGateway(
   new GithubClient(env.GITHUB_TOKEN),
   env.GITHUB_ORG,
 );
+const repositoryStorage = new RepositoryStorage(env.GITHUB_ORG, logger, prSvc);
 
 const filters = env.FILTERS.map((cfg): Filter => ({ ...cfg, id: uuid.v4() }));
 
 const dirName = path.dirname(fileURLToPath(import.meta.url));
-app.register(fastifyStatic, {
-  root: path.join(dirName, '../dist/assets/'),
-  prefix: '/assets/',
-});
+app.use(express.static(path.join(dirName, '../dist/')));
 
 app.get('/', async (req, res) => {
   return res.sendFile('index.html', path.join(dirName, '../dist/'));
@@ -36,26 +36,31 @@ app.get('/api/filters', async (req, res) => {
 });
 
 app.get('/api/pull-requests', async (req, res) => {
-  const pullRequests = await prSvc.loadPullRequests();
-  const pullRequestsWithFilters = pullRequests.map((pr): FilterablePullRequest => {
-    const f = filters.filter((filter) => appliesToPullRequest(filter, pr)).map((f) => f.id);
-    return { ...pr, filters: f };
-  });
+  const repositories = await repositoryStorage.loadRepositories();
 
-  res.send(pullRequestsWithFilters);
+  const allPullRequests: FilterablePullRequest[] = [];
+  for (const repository of repositories) {
+    const pullRequests = await prSvc.loadPullRequests(env.GITHUB_ORG, repository);
+    for (const pullRequest of pullRequests) {
+      const f = filters
+        .filter((filter) => appliesToPullRequest(filter, repository))
+        .map((f) => f.id);
+
+      allPullRequests.push({ ...pullRequest, filters: f });
+    }
+  }
+
+  res.send(allPullRequests);
 });
 
-try {
-  await app.listen({ port: env.HTTP_PORT });
-} catch (err) {
-  app.log.error(err);
-  process.exit(1);
-}
+app.listen(env.HTTP_PORT, () => {
+  logger.info(`Listening on http://0.0.0.0:${env.HTTP_PORT}`);
+});
 
-function appliesToPullRequest(filter: FilterConfig, pr: PullRequest): boolean {
+function appliesToPullRequest(filter: FilterConfig, repository: Repository): boolean {
   let applies = true;
   if (filter.query.team) {
-    applies = matchesCondition(filter.query.team, pr.teams);
+    applies = matchesCondition(filter.query.team, repository.teams);
   }
 
   return applies;

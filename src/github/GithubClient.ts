@@ -1,58 +1,183 @@
-import { Octokit } from '@octokit/rest';
-import { GitHubComment, GitHubPullRequest, GitHubRepo, GitHubReview, GitHubTeam } from './types.js';
+import { graphql } from '@octokit/graphql';
+import { Repository } from '~/model/Repository.js';
+import { GitHubPullRequest, GitHubReview } from './types.js';
+
+interface LoadReposQuery {
+  organization: {
+    repositories: Connection<LoadReposRepository>;
+    teams: Connection<{
+      name: string;
+      repositories: Connection<{ id: string }>;
+    }>;
+  };
+}
+
+interface LoadPullRequestsQuery {
+  repository: {
+    pullRequests: Connection<LoadPullRequestsPullRequests>;
+  };
+}
+
+interface LoadReposRepository {
+  id: string;
+  name: string;
+  url: string;
+}
+
+interface LoadPullRequestsPullRequests {
+  id: string;
+  number: number;
+  title: string;
+  url: string;
+  author: {
+    login: string;
+    url: string;
+    avatarUrl: string;
+  };
+  reviewRequests: {
+    totalCount: number;
+  };
+  comments: {
+    totalCount: number;
+  };
+  reviews: Connection<LoadPullRequestsReview>;
+}
+
+interface LoadPullRequestsReview {
+  state: string;
+  submittedAt: string;
+  author: {
+    login: string;
+  };
+  comments: {
+    totalCount: number;
+  };
+}
+
+interface Connection<T> {
+  nodes: T[];
+}
 
 export class GithubClient {
-  private readonly octokit: Octokit;
+  private readonly graphql: typeof graphql;
 
   constructor(auth: string) {
-    this.octokit = new Octokit({ auth });
+    this.graphql = graphql.defaults({ headers: { authorization: `token ${auth}` } });
   }
 
-  async loadRepositories(org: string): Promise<GitHubRepo[]> {
-    const response = await this.octokit.rest.repos.listForOrg({ org });
-    return response.data;
-  }
+  async loadRepositories(org: string): Promise<Repository[]> {
+    const { organization } = await this.graphql<LoadReposQuery>(
+      `
+        query LoadRepos($org: String!) {
+          organization(login: $org) {
+            repositories(first: 100) {
+              nodes {
+                id 
+                name
+                url
+              }
+            }
+            teams(first: 20) {
+              nodes {
+                name
+                repositories(first: 20) {
+                  nodes {
+                    id 
+                  }
+                }            
+              }
+            }
+          }
+        }
+      `,
+      { org },
+    );
 
-  async loadRepositoryTeams(repo: GitHubRepo): Promise<GitHubTeam[]> {
-    try {
-      const owner = repo.owner.login;
-      const response = await this.octokit.rest.repos.listTeams({ owner, repo: repo.name });
-      return response.data;
-    } catch (err) {
-      return [];
+    const { teams, repositories } = organization;
+    const map = new Map<string, Repository>();
+    for (const repository of repositories.nodes) {
+      map.set(repository.id, {
+        id: repository.id,
+        name: repository.name,
+        href: repository.url,
+        teams: [],
+      });
     }
+
+    for (const team of teams.nodes) {
+      for (const teamRepo of team.repositories.nodes) {
+        map.get(teamRepo.id)!.teams.push(team.name);
+      }
+    }
+
+    return [...map.values()];
   }
 
-  async loadPullRequests(repo: GitHubRepo): Promise<GitHubPullRequest[]> {
-    const owner = repo.owner.login;
-    const response = await this.octokit.rest.pulls.list({ owner, repo: repo.name });
-    return response.data;
-  }
+  async loadPullRequests(org: string, repoName: string): Promise<GitHubPullRequest[]> {
+    const { repository } = await this.graphql<LoadPullRequestsQuery>(
+      `
+        query LoadPullRequests($org: String!, $repoName: String!) {
+          repository(owner: $org, name: $repoName) {
+            pullRequests(first: 20, states: OPEN) {
+              nodes {
+                id
+                number
+                title
+                url
+                author {
+                  login
+                  url
+                  avatarUrl                
+                }
+                comments {
+                  totalCount
+                }
+                reviewRequests(first: 20) {
+                  totalCount
+                }
+                reviews(first: 20) {
+                  nodes {
+                    state
+                    submittedAt
+                    author {
+                      login
+                    }
+                    comments {
+                      totalCount
+                    }                
+                  }
+                }
+              }
+            }
+          }
+        }
+      `,
+      { org, repoName },
+    );
 
-  async loadPullRequestReviewComments(
-    repository: GitHubRepo,
-    pr: GitHubPullRequest,
-  ): Promise<GitHubComment[]> {
-    const owner = repository.owner.login;
-    const repo = repository.name;
-    const pull_number = pr.number;
-    const response = await this.octokit.rest.pulls.listReviewComments({ owner, repo, pull_number });
-    return response.data;
-  }
-
-  async loadPullRequestComments(repository: GitHubRepo, pr: GitHubPullRequest): Promise<unknown[]> {
-    const owner = repository.owner.login;
-    const repo = repository.name;
-    const issue_number = pr.number;
-    const response = await this.octokit.rest.issues.listComments({ owner, repo, issue_number });
-    return response.data;
-  }
-
-  async loadReviews(repository: GitHubRepo, pr: GitHubPullRequest): Promise<GitHubReview[]> {
-    const owner = repository.owner.login;
-    const repo = repository.name;
-    const pull_number = pr.number;
-    const response = await this.octokit.rest.pulls.listReviews({ owner, repo, pull_number });
-    return response.data;
+    const pullRequests = repository.pullRequests.nodes;
+    return pullRequests.map(
+      (pr): GitHubPullRequest => ({
+        id: pr.id,
+        href: pr.url,
+        number: pr.number,
+        title: pr.title,
+        commentCount: pr.comments.totalCount,
+        reviewRequestCount: pr.reviewRequests.totalCount,
+        author: {
+          login: pr.author.login,
+          url: pr.author.url,
+          avatarUrl: pr.author.avatarUrl,
+        },
+        reviews: pr.reviews.nodes.map(
+          (review): GitHubReview => ({
+            state: review.state,
+            commentCount: review.comments.totalCount,
+            author: review.author.login,
+            submittedAt: new Date(review.submittedAt),
+          }),
+        ),
+      }),
+    );
   }
 }

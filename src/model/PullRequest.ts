@@ -10,5 +10,4 @@ export interface PullRequest {
   author: User;
   repository: Repository;
   commentCounter: number;
-  teams: string[];
 }
