@@ -1,11 +1,12 @@
 import express from 'express';
+import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as uuid from 'uuid';
-import { Logger } from './Logger.js';
 import * as env from './env.js';
 import { GithubClient } from './github/GithubClient.js';
 import { GithubGateway } from './github/GithubGateway.js';
+import { Logger } from './Logger.js';
 import { FilterablePullRequest } from './model/FilterablePullRequest.js';
 import { Condition, FilterConfig } from './model/FilterConfig.js';
 import { PullRequestService } from './model/PullRequestService.js';
@@ -22,7 +23,13 @@ const prSvc: PullRequestService = new GithubGateway(
 );
 const repositoryStorage = new RepositoryStorage(env.GITHUB_ORG, logger, prSvc);
 
-const filters = env.FILTERS.map((cfg): Filter => ({ ...cfg, id: uuid.v4() }));
+const filters: Filter[] = [];
+if (env.FILTERS) {
+  const filterConfigJson = await fs.readFile(env.FILTERS, 'utf8');
+  const filterConfig = JSON.parse(filterConfigJson) as FilterConfig[];
+  filters.push(...filterConfig.map((cfg): Filter => ({ ...cfg, id: uuid.v4() })));
+}
+logger.info(`Loaded filters: [${filters.map((f) => f.name).join(', ')}]`);
 
 const dirName = path.dirname(fileURLToPath(import.meta.url));
 app.use(express.static(path.join(dirName, '../dist/')));
