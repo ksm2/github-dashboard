@@ -2,35 +2,32 @@ import express from 'express';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import * as uuid from 'uuid';
 import * as env from './env.js';
 import { GithubClient } from './github/GithubClient.js';
 import { GithubGateway } from './github/GithubGateway.js';
 import { Logger } from './Logger.js';
-import { FilterablePullRequest } from './model/FilterablePullRequest.js';
-import { Condition, FilterConfig } from './model/FilterConfig.js';
-import { PullRequest } from './model/PullRequest.js';
+import { FilterConfig, FilterConfigJson } from './model/FilterConfig.js';
 import { PullRequestService } from './model/PullRequestService.js';
-import { Repository } from './model/Repository.js';
+import { PullRequestLoader } from './PullRequestLoader.js';
+import { PullRequestStorage } from './PullRequestStorage.js';
 import { RepositoryStorage } from './RepositoryStorage.js';
-
-type Filter = FilterConfig & { id: string };
 
 const app = express();
 const logger = new Logger();
-const prSvc: PullRequestService = new GithubGateway(
-  new GithubClient(env.GITHUB_TOKEN),
-  env.GITHUB_ORG,
-);
-const repositoryStorage = new RepositoryStorage(env.GITHUB_ORG, logger, prSvc);
 
-const filters: Filter[] = [];
+const filters: FilterConfig[] = [];
 if (env.FILTERS) {
   const filterConfigJson = await fs.readFile(env.FILTERS, 'utf8');
-  const filterConfig = JSON.parse(filterConfigJson) as FilterConfig[];
-  filters.push(...filterConfig.map((cfg): Filter => ({ ...cfg, id: uuid.v4() })));
+  const filterConfig = JSON.parse(filterConfigJson) as FilterConfigJson[];
+  filters.push(...filterConfig.map(FilterConfig.fromJSON));
 }
 logger.info(`Loaded filters: [${filters.map((f) => f.name).join(', ')}]`);
+
+const githubClient = new GithubClient(env.GITHUB_TOKEN);
+const pullRequestService: PullRequestService = new GithubGateway(githubClient, env.GITHUB_ORG);
+const repositoryStorage = new RepositoryStorage(env.GITHUB_ORG, logger, pullRequestService);
+const pullRequestLoader = new PullRequestLoader(env.GITHUB_ORG, filters, pullRequestService);
+const pullRequestStorage = new PullRequestStorage(logger, repositoryStorage, pullRequestLoader);
 
 const dirName = path.dirname(fileURLToPath(import.meta.url));
 app.use(express.static(path.join(dirName, '../dist/')));
@@ -45,25 +42,7 @@ app.get('/api/filters', async (req, res) => {
 
 app.get('/api/pull-requests', async (req, res) => {
   try {
-    const repositories = await repositoryStorage.loadRepositories();
-    const filteredRepos = repositories.filter((repo) =>
-      filters.some((filter) => appliesToRepository(filter, repo)),
-    );
-
-    const allPullRequests: FilterablePullRequest[] = [];
-    await Promise.all(
-      filteredRepos.map(async (repository) => {
-        const pullRequests = await prSvc.loadPullRequests(env.GITHUB_ORG, repository);
-        for (const pullRequest of pullRequests) {
-          const f = filters
-            .filter((filter) => appliesToPullRequest(filter, pullRequest))
-            .map((f) => f.id);
-
-          allPullRequests.push({ ...pullRequest, filters: f });
-        }
-      }),
-    );
-
+    const allPullRequests = await pullRequestStorage.loadPullRequests();
     res.send(allPullRequests);
   } catch (reason: unknown) {
     const err = reason as Error;
@@ -75,42 +54,3 @@ app.get('/api/pull-requests', async (req, res) => {
 app.listen(env.HTTP_PORT, () => {
   logger.info(`Listening on http://0.0.0.0:${env.HTTP_PORT}`);
 });
-
-function appliesToRepository(filter: FilterConfig, repository: Repository): boolean {
-  let applies = true;
-  if (filter.query.team) {
-    applies = matchesCondition(filter.query.team, repository.teams);
-  }
-
-  return applies;
-}
-
-function appliesToPullRequest(filter: FilterConfig, pullRequest: PullRequest): boolean {
-  let applies = appliesToRepository(filter, pullRequest.repository);
-  if (applies && filter.query.author) {
-    applies = matchCondition(filter.query.author, pullRequest.author.name);
-  }
-
-  return applies;
-}
-
-function matchesCondition<T>(condition: Condition<T>, values: T[]): boolean {
-  return values.some((value) => matchCondition(condition, value));
-}
-
-function matchCondition<T>(condition: Condition<T>, value: T): boolean {
-  let applies = true;
-  if (condition.$eq !== undefined) {
-    applies = value === condition.$eq;
-  }
-  if (applies && condition.$ne !== undefined) {
-    applies = value !== condition.$ne;
-  }
-  if (applies && condition.$in !== undefined) {
-    applies = condition.$in.includes(value);
-  }
-  if (applies && condition.$ni !== undefined) {
-    applies = !condition.$ni.includes(value);
-  }
-  return applies;
-}
