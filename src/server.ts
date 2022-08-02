@@ -43,21 +43,27 @@ app.get('/api/filters', async (req, res) => {
 });
 
 app.get('/api/pull-requests', async (req, res) => {
-  const repositories = await repositoryStorage.loadRepositories();
+  try {
+    const repositories = await repositoryStorage.loadRepositories();
 
-  const allPullRequests: FilterablePullRequest[] = [];
-  for (const repository of repositories) {
-    const pullRequests = await prSvc.loadPullRequests(env.GITHUB_ORG, repository);
-    for (const pullRequest of pullRequests) {
-      const f = filters
-        .filter((filter) => appliesToPullRequest(filter, repository))
-        .map((f) => f.id);
+    const allPullRequests: FilterablePullRequest[] = [];
+    for (const repository of repositories) {
+      const pullRequests = await prSvc.loadPullRequests(env.GITHUB_ORG, repository);
+      for (const pullRequest of pullRequests) {
+        const f = filters
+          .filter((filter) => appliesToPullRequest(filter, repository))
+          .map((f) => f.id);
 
-      allPullRequests.push({ ...pullRequest, filters: f });
+        allPullRequests.push({ ...pullRequest, filters: f });
+      }
     }
-  }
 
-  res.send(allPullRequests);
+    res.send(allPullRequests);
+  } catch (reason: unknown) {
+    const err = reason as Error;
+    logger.error(err.stack!);
+    res.status(500).send({ error: err.message });
+  }
 });
 
 app.listen(env.HTTP_PORT, () => {
