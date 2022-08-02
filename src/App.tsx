@@ -7,14 +7,14 @@ import { FilterMenu } from '~/organisms/FilterMenu.js';
 import { StatusLanes } from '~/organisms/StatusLanes.js';
 import { useGetPullRequestsQuery } from '~/redux/apiSlice.js';
 import { useAppSelector } from '~/redux/store.js';
-import { intersects } from '~/utils/intersects.js';
+import { isSubSetOf } from '~/utils/isSubSetOf.js';
 import './App.css';
 
 export function App() {
   const filters = useAppSelector((state) => state.filter.enabled);
   const { data: pullRequests = [] } = useGetPullRequestsQuery(undefined, { refetchOnFocus: true });
   const filteredPullRequests = pullRequests.filter(
-    (pr) => !filters.length || intersects(pr.filters, filters),
+    (pr) => !filters.length || isSubSetOf(pr.filters, filters),
   );
 
   const siteTitle = `Pull Requests`;
