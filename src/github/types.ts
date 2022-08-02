@@ -5,7 +5,7 @@ export interface GitHubPullRequest {
   href: string;
   author: GitHubUser;
   reviews: GitHubReview[];
-  reviewRequestCount: number;
+  reviewRequests: string[];
   commentCount: number;
 }
 

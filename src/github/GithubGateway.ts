@@ -47,16 +47,16 @@ export class GithubGateway implements PullRequestService {
   }
 
   private determineStatus(pr: GitHubPullRequest): Status {
-    if (!pr.reviewRequestCount) {
-      return Status.OPEN;
-    }
-
     if (!pr.reviews.length) {
-      return Status.IN_REVIEW;
+      return pr.reviewRequests.length ? Status.IN_REVIEW : Status.OPEN;
     }
 
-    const grouped = [...GithubGateway.groupReviews(pr.reviews).values()];
+    const reviewMap = GithubGateway.groupReviews(pr.reviews);
+    for (const reviewRequest of pr.reviewRequests) {
+      reviewMap.delete(reviewRequest);
+    }
 
+    const grouped = [...reviewMap.values()];
     if (grouped.some((review) => review.state === 'CHANGES_REQUESTED')) {
       return Status.CHANGES_REQUESTED;
     }

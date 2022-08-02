@@ -34,9 +34,7 @@ interface LoadPullRequestsPullRequests {
     url: string;
     avatarUrl: string;
   };
-  reviewRequests: {
-    totalCount: number;
-  };
+  reviewRequests: Connection<{ requestedReviewer: string }>;
   comments: {
     totalCount: number;
   };
@@ -133,7 +131,9 @@ export class GithubClient {
                   totalCount
                 }
                 reviewRequests(first: 20) {
-                  totalCount
+                  nodes {
+                    requestedReviewer
+                  }
                 }
                 reviews(first: 20) {
                   nodes {
@@ -163,7 +163,7 @@ export class GithubClient {
         number: pr.number,
         title: pr.title,
         commentCount: pr.comments.totalCount,
-        reviewRequestCount: pr.reviewRequests.totalCount,
+        reviewRequests: pr.reviewRequests.nodes.map((request) => request.requestedReviewer),
         author: {
           login: pr.author.login,
           url: pr.author.url,
