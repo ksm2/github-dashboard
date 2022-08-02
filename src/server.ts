@@ -45,18 +45,23 @@ app.get('/api/filters', async (req, res) => {
 app.get('/api/pull-requests', async (req, res) => {
   try {
     const repositories = await repositoryStorage.loadRepositories();
+    const filteredRepos = repositories.filter((repo) =>
+      filters.some((filter) => appliesToRepository(filter, repo)),
+    );
 
     const allPullRequests: FilterablePullRequest[] = [];
-    for (const repository of repositories) {
-      const pullRequests = await prSvc.loadPullRequests(env.GITHUB_ORG, repository);
-      for (const pullRequest of pullRequests) {
-        const f = filters
-          .filter((filter) => appliesToPullRequest(filter, repository))
-          .map((f) => f.id);
+    await Promise.all(
+      filteredRepos.map(async (repository) => {
+        const pullRequests = await prSvc.loadPullRequests(env.GITHUB_ORG, repository);
+        for (const pullRequest of pullRequests) {
+          const f = filters
+            .filter((filter) => appliesToRepository(filter, repository))
+            .map((f) => f.id);
 
-        allPullRequests.push({ ...pullRequest, filters: f });
-      }
-    }
+          allPullRequests.push({ ...pullRequest, filters: f });
+        }
+      }),
+    );
 
     res.send(allPullRequests);
   } catch (reason: unknown) {
@@ -70,7 +75,7 @@ app.listen(env.HTTP_PORT, () => {
   logger.info(`Listening on http://0.0.0.0:${env.HTTP_PORT}`);
 });
 
-function appliesToPullRequest(filter: FilterConfig, repository: Repository): boolean {
+function appliesToRepository(filter: FilterConfig, repository: Repository): boolean {
   let applies = true;
   if (filter.query.team) {
     applies = matchesCondition(filter.query.team, repository.teams);
