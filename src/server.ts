@@ -9,6 +9,7 @@ import { GithubGateway } from './github/GithubGateway.js';
 import { Logger } from './Logger.js';
 import { FilterablePullRequest } from './model/FilterablePullRequest.js';
 import { Condition, FilterConfig } from './model/FilterConfig.js';
+import { PullRequest } from './model/PullRequest.js';
 import { PullRequestService } from './model/PullRequestService.js';
 import { Repository } from './model/Repository.js';
 import { RepositoryStorage } from './RepositoryStorage.js';
@@ -55,7 +56,7 @@ app.get('/api/pull-requests', async (req, res) => {
         const pullRequests = await prSvc.loadPullRequests(env.GITHUB_ORG, repository);
         for (const pullRequest of pullRequests) {
           const f = filters
-            .filter((filter) => appliesToRepository(filter, repository))
+            .filter((filter) => appliesToPullRequest(filter, pullRequest))
             .map((f) => f.id);
 
           allPullRequests.push({ ...pullRequest, filters: f });
@@ -84,6 +85,15 @@ function appliesToRepository(filter: FilterConfig, repository: Repository): bool
   return applies;
 }
 
+function appliesToPullRequest(filter: FilterConfig, pullRequest: PullRequest): boolean {
+  let applies = appliesToRepository(filter, pullRequest.repository);
+  if (applies && filter.query.author) {
+    applies = matchCondition(filter.query.author, pullRequest.author.name);
+  }
+
+  return applies;
+}
+
 function matchesCondition<T>(condition: Condition<T>, values: T[]): boolean {
   return values.some((value) => matchCondition(condition, value));
 }
@@ -92,6 +102,15 @@ function matchCondition<T>(condition: Condition<T>, value: T): boolean {
   let applies = true;
   if (condition.$eq !== undefined) {
     applies = value === condition.$eq;
+  }
+  if (applies && condition.$ne !== undefined) {
+    applies = value !== condition.$ne;
+  }
+  if (applies && condition.$in !== undefined) {
+    applies = condition.$in.includes(value);
+  }
+  if (applies && condition.$ni !== undefined) {
+    applies = !condition.$ni.includes(value);
   }
   return applies;
 }
