@@ -1,10 +1,11 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { Filter } from '~/model/Filter.js';
 import { FilterablePullRequest } from '~/model/FilterablePullRequest.js';
+import { ensureTrailingSlash } from '~/utils/ensureTrailingSlash.js';
 
 export const api = createApi({
   reducerPath: 'pokemonApi',
-  baseQuery: fetchBaseQuery({ baseUrl: location.origin + '/api' }),
+  baseQuery: fetchBaseQuery({ baseUrl: ensureTrailingSlash(location.href) + 'api' }),
   endpoints: (builder) => ({
     getFilters: builder.query<Filter[], void>({
       query: () => `filters`,
