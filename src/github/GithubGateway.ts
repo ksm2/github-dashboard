@@ -70,7 +70,7 @@ export class GithubGateway implements PullRequestService {
 
   private static groupReviews(reviews: GitHubReview[]): Map<string, GitHubReview> {
     return groupBy(
-      reviews,
+      reviews.filter((review) => ['APPROVED', 'CHANGES_REQUESTED'].includes(review.state)),
       (r) => r.author,
       (r1, r2) => r2.submittedAt.getTime() - r1.submittedAt.getTime(),
     );
