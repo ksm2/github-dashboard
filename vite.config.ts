@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    base: './',
     define: {
       'import.meta.env.GITHUB_TOKEN': JSON.stringify(env.GITHUB_TOKEN),
       'import.meta.env.GITHUB_ORGA': JSON.stringify(env.GITHUB_ORGA),
