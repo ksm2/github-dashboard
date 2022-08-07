@@ -5,7 +5,8 @@ interface FilterState {
   enabled: string[];
 }
 
-const initialState: FilterState = { enabled: [] };
+const href = new URL(location.href);
+const initialState: FilterState = { enabled: href.searchParams.getAll('filters') };
 
 const filterSlice = createSlice({
   name: 'filter',

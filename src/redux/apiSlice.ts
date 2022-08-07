@@ -3,9 +3,13 @@ import { Filter } from '~/model/Filter.js';
 import { FilterablePullRequest } from '~/model/FilterablePullRequest.js';
 import { ensureTrailingSlash } from '~/utils/ensureTrailingSlash.js';
 
+const baseUrl = new URL(location.href);
+baseUrl.search = '';
+baseUrl.pathname = ensureTrailingSlash(baseUrl.pathname) + 'api';
+
 export const api = createApi({
-  reducerPath: 'pokemonApi',
-  baseQuery: fetchBaseQuery({ baseUrl: ensureTrailingSlash(location.href) + 'api' }),
+  reducerPath: 'api',
+  baseQuery: fetchBaseQuery({ baseUrl: baseUrl.toString() }),
   endpoints: (builder) => ({
     getFilters: builder.query<Filter[], void>({
       query: () => `filters`,
