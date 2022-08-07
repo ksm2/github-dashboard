@@ -9,7 +9,7 @@ interface Props {
 
 export function Card({ href, children }: Props) {
   return (
-    <ExtLink href={href} className="Card">
+    <ExtLink tagName="div" href={href} className="Card">
       {children}
     </ExtLink>
   );
