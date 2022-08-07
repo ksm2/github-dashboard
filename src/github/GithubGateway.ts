@@ -7,6 +7,9 @@ import { GithubClient } from './GithubClient.js';
 import { GitHubPullRequest, GitHubReview } from './types.js';
 
 export class GithubGateway implements PullRequestService {
+  private static readonly STATE_CHANGES = 'CHANGES_REQUESTED';
+  private static readonly STATE_APPROVED = 'APPROVED';
+
   private readonly client: GithubClient;
   private readonly org: string;
 
@@ -32,10 +35,27 @@ export class GithubGateway implements PullRequestService {
           avatarSrc: pullRequest.author.avatarUrl,
         },
         href: pullRequest.href,
-        commentCounter: this.countComments(pullRequest),
+        approvalCount: this.countApprovals(pullRequest),
+        commentCount: this.countComments(pullRequest),
         repository,
         status: this.determineStatus(pullRequest),
       }),
+    );
+  }
+
+  private countApprovals(pr: GitHubPullRequest): number {
+    if (!pr.reviews.length) {
+      return 0;
+    }
+
+    const reviewMap = GithubGateway.groupReviews(pr.reviews);
+    for (const reviewRequest of pr.reviewRequests) {
+      reviewMap.delete(reviewRequest);
+    }
+
+    return [...reviewMap.values()].reduce(
+      (sum, review) => (review.state === GithubGateway.STATE_APPROVED ? sum + 1 : sum),
+      0,
     );
   }
 
@@ -57,11 +77,11 @@ export class GithubGateway implements PullRequestService {
     }
 
     const grouped = [...reviewMap.values()];
-    if (grouped.some((review) => review.state === 'CHANGES_REQUESTED')) {
+    if (grouped.some((review) => review.state === GithubGateway.STATE_CHANGES)) {
       return Status.CHANGES_REQUESTED;
     }
 
-    if (grouped.some((review) => review.state === 'APPROVED')) {
+    if (grouped.some((review) => review.state === GithubGateway.STATE_APPROVED)) {
       return Status.APPROVED;
     }
 
@@ -70,7 +90,9 @@ export class GithubGateway implements PullRequestService {
 
   private static groupReviews(reviews: GitHubReview[]): Map<string, GitHubReview> {
     return groupBy(
-      reviews.filter((review) => ['APPROVED', 'CHANGES_REQUESTED'].includes(review.state)),
+      reviews.filter((review) =>
+        [GithubGateway.STATE_APPROVED, GithubGateway.STATE_CHANGES].includes(review.state),
+      ),
       (r) => r.author,
       (r1, r2) => r2.submittedAt.getTime() - r1.submittedAt.getTime(),
     );

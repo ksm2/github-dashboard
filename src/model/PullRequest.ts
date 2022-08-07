@@ -9,5 +9,6 @@ export interface PullRequest {
   status: Status;
   author: User;
   repository: Repository;
-  commentCounter: number;
+  commentCount: number;
+  approvalCount: number;
 }
