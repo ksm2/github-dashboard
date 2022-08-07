@@ -1,6 +1,8 @@
 import { Lane } from '~/atoms/lanes/Lane.js';
+import { LaneHeader } from '~/atoms/lanes/LaneHeader.js';
 import { PullRequest } from '~/model/PullRequest.js';
 import { Status } from '~/model/Status.js';
+import { StatusDescription } from '~/molecules/StatusDescription.js';
 import { StatusPlaceholder } from '~/molecules/StatusPlaceholder.js';
 import { PullRequestCard } from '~/organisms/PullRequestCard.js';
 
@@ -22,6 +24,7 @@ export function PullRequestLane({ pullRequests, status }: Props) {
 
   return (
     <Lane>
+      <StatusDescription status={status} />
       {filteredPrs.map((pr, index) => (
         <PullRequestCard key={index} pullRequest={pr} />
       ))}
