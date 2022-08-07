@@ -8,6 +8,10 @@ RUN npm ci && npm run -s build
 
 FROM node:16
 
+LABEL org.opencontainers.image.title="GitHub Dashboard" \
+      org.opencontainers.image.vendor="Konstantin Möllers" \
+      org.opencontainers.image.description="A web app which displays open pull requests of an organisation with customisable filters."
+
 WORKDIR /app
 COPY --from=builder dist/ /app/dist/
 COPY package.json package-lock.json tsconfig.json /app/
