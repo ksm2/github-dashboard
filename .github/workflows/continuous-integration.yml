@@ -1,10 +1,6 @@
 name: Continuous Integration
 
-on:
-  push:
-    ref_namees: [ "main" ]
-  pull_request:
-    ref_namees: [ "main" ]
+on: [ push ]
 
 jobs:
   build:
@@ -19,21 +15,7 @@ jobs:
         cache: 'npm'
     - name: Install Dependencies
       run: npm ci
-    - name: Run Tests
+    - name: Test
       run: npm test
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-    - name: Login to DockerHub
-      uses: docker/login-action@v2
-      if: github.ref_name == 'main'
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Build and push
-      uses: docker/build-push-action@v3
-      with:
-        push: ${{ github.ref_name == 'main' }}
-        tags: |
-          ghcr.io/ksm2/github-dashboard:latest
-          ghcr.io/ksm2/github-dashboard:${{ github.sha }}
+    - name: Build
+      run: npm run build
