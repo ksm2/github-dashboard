@@ -1,0 +1,23 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Next Version'
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Git Config
+        run: |
+          git config --local user.email ksm.moellers@gmail.com
+          git config --local user.name "Konstantin Möllers"
+      - name: Bump Version
+        run: npm version ${{ github.event.inputs.version }}
+      - name: Push
+        run: git push --tags origin ${{ github.ref_name }}
