@@ -5,10 +5,12 @@ import { GitHubPullRequest, GitHubReview } from './types.js';
 interface LoadReposQuery {
   organization: {
     repositories: Connection<LoadReposRepository>;
-    teams: Connection<{
-      name: string;
-      repositories: Connection<{ id: string }>;
-    }>;
+  };
+}
+
+interface LoadTeamsQuery {
+  organization: {
+    teams: Connection<LoadReposTeam>;
   };
 }
 
@@ -16,6 +18,11 @@ interface LoadPullRequestsQuery {
   repository: {
     pullRequests: Connection<LoadPullRequestsPullRequests>;
   };
+}
+
+interface LoadReposTeam {
+  name: string;
+  repositories: Connection<{ id: string }>;
 }
 
 interface LoadReposRepository {
@@ -53,7 +60,18 @@ interface LoadPullRequestsReview {
 }
 
 interface Connection<T> {
+  edges: {
+    cursor: string;
+  };
   nodes: T[];
+  pageInfo: PageInfo;
+}
+
+interface PageInfo {
+  startCursor?: string;
+  endCursor?: string;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }
 
 export class GithubClient {
@@ -64,36 +82,13 @@ export class GithubClient {
   }
 
   async loadRepositories(org: string): Promise<Repository[]> {
-    const { organization } = await this.graphql<LoadReposQuery>(
-      `
-        query LoadRepos($org: String!) {
-          organization(login: $org) {
-            repositories(first: 100) {
-              nodes {
-                id 
-                name
-                url
-              }
-            }
-            teams(first: 20) {
-              nodes {
-                name
-                repositories(first: 20) {
-                  nodes {
-                    id 
-                  }
-                }            
-              }
-            }
-          }
-        }
-      `,
-      { org },
-    );
+    const [repositories, teams] = await Promise.all([
+      this.loadRepositoryPages(org),
+      this.loadTeamPages(org),
+    ]);
 
-    const { teams, repositories } = organization;
     const map = new Map<string, Repository>();
-    for (const repository of repositories.nodes) {
+    for (const repository of repositories) {
       map.set(repository.id, {
         id: repository.id,
         name: repository.name,
@@ -102,13 +97,77 @@ export class GithubClient {
       });
     }
 
-    for (const team of teams.nodes) {
+    for (const team of teams) {
       for (const teamRepo of team.repositories.nodes) {
-        map.get(teamRepo.id)!.teams.push(team.name);
+        if (map.has(teamRepo.id)) {
+          map.get(teamRepo.id)!.teams.push(team.name);
+        }
       }
     }
 
     return [...map.values()];
+  }
+
+  async loadRepositoryPages(org: string): Promise<LoadReposRepository[]> {
+    return GithubClient.paginate(org, (org, cursor) => this.loadRepositoryPage(org, cursor));
+  }
+
+  async loadRepositoryPage(
+    org: string,
+    cursor: string | null = null,
+  ): Promise<[LoadReposRepository[], PageInfo]> {
+    const query = `
+      query LoadRepos($org: String!, $cursor: String) {
+        organization(login: $org) {
+          repositories(first: 100, after: $cursor) {
+            pageInfo {
+              endCursor
+              hasNextPage
+            }
+            nodes {
+              id 
+              name
+              url
+            }
+          }
+        }
+      }
+    `;
+    const { organization } = await this.graphql<LoadReposQuery>(query, { org, cursor });
+    return [organization.repositories.nodes, organization.repositories.pageInfo];
+  }
+
+  async loadTeamPages(org: string): Promise<LoadReposTeam[]> {
+    return GithubClient.paginate(org, (org, cursor) => this.loadTeamPage(org, cursor));
+  }
+
+  async loadTeamPage(
+    org: string,
+    cursor: string | null = null,
+  ): Promise<[LoadReposTeam[], PageInfo]> {
+    const query = `
+      query LoadTeams($org: String!, $cursor: String) {
+        organization(login: $org) {
+          teams(first: 50, after: $cursor) {
+            pageInfo {
+              endCursor
+              hasNextPage
+            }
+            nodes {
+              name
+              repositories(first: 50) {
+                nodes {
+                  id 
+                  url
+                }
+              }            
+            }
+          }
+        }
+      }
+    `;
+    const { organization } = await this.graphql<LoadTeamsQuery>(query, { org, cursor });
+    return [organization.teams.nodes, organization.teams.pageInfo];
   }
 
   async loadPullRequests(org: string, repoName: string): Promise<GitHubPullRequest[]> {
@@ -179,5 +238,21 @@ export class GithubClient {
         ),
       }),
     );
+  }
+
+  private static async paginate<P, T>(
+    param: P,
+    callback: (param: P, cursor?: string) => Promise<[T[], PageInfo]>,
+  ): Promise<T[]> {
+    const allItems = [];
+    let items = [];
+    let hasNextPage = true;
+    let endCursor = undefined;
+    while (hasNextPage) {
+      [items, { hasNextPage, endCursor }] = await callback(param, endCursor);
+      allItems.push(...items);
+    }
+
+    return allItems;
   }
 }
