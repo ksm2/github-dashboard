@@ -7,6 +7,7 @@ export interface GitHubPullRequest {
   reviews: GitHubReview[];
   reviewRequests: string[];
   commentCount: number;
+  labels: GitHubLabel[];
 }
 
 export interface GitHubUser {
@@ -20,4 +21,9 @@ export interface GitHubReview {
   submittedAt: Date;
   author: string;
   commentCount: number;
+}
+
+export interface GitHubLabel {
+  name: string;
+  color: string;
 }

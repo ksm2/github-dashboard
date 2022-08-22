@@ -1,6 +1,6 @@
 import { graphql } from '@octokit/graphql';
 import { Repository } from '~/model/Repository.js';
-import { GitHubPullRequest, GitHubReview } from './types.js';
+import { GitHubLabel, GitHubPullRequest, GitHubReview } from './types.js';
 
 interface LoadReposQuery {
   organization: {
@@ -41,6 +41,7 @@ interface LoadPullRequestsPullRequests {
     url: string;
     avatarUrl: string;
   };
+  labels: Connection<{ name: string; color: string }>;
   reviewRequests: Connection<{ requestedReviewer: { login?: string } }>;
   comments: {
     totalCount: number;
@@ -198,6 +199,12 @@ export class GithubClient {
                     }
                   }
                 }
+                labels(first: 100) {
+                  nodes {
+                    name
+                    color
+                  }
+                }
                 reviews(first: 20) {
                   nodes {
                     state
@@ -240,6 +247,12 @@ export class GithubClient {
             commentCount: review.comments.totalCount,
             author: review.author.login,
             submittedAt: new Date(review.submittedAt),
+          }),
+        ),
+        labels: pr.labels.nodes.map(
+          (label): GitHubLabel => ({
+            name: label.name,
+            color: label.color,
           }),
         ),
       }),

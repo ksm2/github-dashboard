@@ -3,6 +3,8 @@ import { CardFooter } from '~/atoms/cards/CardFooter.js';
 import { CardHeader } from '~/atoms/cards/CardHeader.js';
 import { IconText } from '~/atoms/IconText.js';
 import { Id } from '~/atoms/Id.js';
+import { Tag } from '~/atoms/tags/Tag.js';
+import { Tags } from '~/atoms/tags/Tags.js';
 import { CheckCircleIcon } from '~/icons/CheckCircleIcon.js';
 import { CommentIcon } from '~/icons/CommentIcon.js';
 import { PullRequest } from '~/model/PullRequest.js';
@@ -23,6 +25,13 @@ export function PullRequestCard({ pullRequest }: Props) {
         <h2 title={pullRequest.title}>{pullRequest.title}</h2>
         <Id>#{pullRequest.id}</Id>
       </CardHeader>
+      {pullRequest.labels.length > 0 && (
+        <Tags>
+          {pullRequest.labels.map((label) => (
+            <Tag key={label.name} text={label.name} color={label.color} />
+          ))}
+        </Tags>
+      )}
       <CardFooter>
         <AvatarWithName user={pullRequest.author} />
         <RepoLink repository={pullRequest.repository} />

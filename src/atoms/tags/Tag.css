@@ -1,0 +1,16 @@
+.Tag {
+  border: 1px solid black;
+  border-radius: 0.25rem;
+  font-size: 75%;
+  padding: 0.125rem 0.25rem;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-color-scheme: dark) {
+  .Tag {
+    border-color: white;
+  }
+}
