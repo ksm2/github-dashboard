@@ -41,7 +41,7 @@ interface LoadPullRequestsPullRequests {
     url: string;
     avatarUrl: string;
   };
-  reviewRequests: Connection<{ requestedReviewer: string }>;
+  reviewRequests: Connection<{ requestedReviewer: { login?: string } }>;
   comments: {
     totalCount: number;
   };
@@ -191,7 +191,11 @@ export class GithubClient {
                 }
                 reviewRequests(first: 20) {
                   nodes {
-                    requestedReviewer
+                    requestedReviewer {
+                      ... on User {
+                        login
+                      }
+                    }
                   }
                 }
                 reviews(first: 20) {
@@ -222,7 +226,9 @@ export class GithubClient {
         number: pr.number,
         title: pr.title,
         commentCount: pr.comments.totalCount,
-        reviewRequests: pr.reviewRequests.nodes.map((request) => request.requestedReviewer),
+        reviewRequests: pr.reviewRequests.nodes
+          .map((request) => request.requestedReviewer.login)
+          .filter(GithubClient.isString),
         author: {
           login: pr.author.login,
           url: pr.author.url,
@@ -254,5 +260,9 @@ export class GithubClient {
     }
 
     return allItems;
+  }
+
+  private static isString(value: unknown): value is string {
+    return typeof value === 'string';
   }
 }
