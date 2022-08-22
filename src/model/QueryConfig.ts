@@ -17,6 +17,9 @@ export abstract class Query {
     if (config.author) {
       queries.push(new AuthorTerm(config.author));
     }
+    if (config.title) {
+      queries.push(new TitleTerm(config.title));
+    }
     return queries.length == 1 ? queries[0] : new Conjunction(queries);
   }
 }
@@ -105,10 +108,21 @@ class AuthorTerm extends Term {
   }
 }
 
+class TitleTerm extends Term {
+  appliesToPullRequest(pullRequest: PullRequest): boolean {
+    return this.matchesCondition(pullRequest.title);
+  }
+
+  appliesToRepository(repository: Repository): boolean {
+    return true;
+  }
+}
+
 export interface QueryConfig {
   $or?: QueryConfig[];
   team?: Condition;
   author?: Condition;
+  title?: Condition;
 }
 
 export interface Condition {
