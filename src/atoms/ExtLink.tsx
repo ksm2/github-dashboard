@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { MouseEvent, ReactNode, useRef } from 'react';
 
 interface Props {
   className?: string;
@@ -16,12 +16,27 @@ export function ExtLink({ tagName = 'a', children, ...props }: Props) {
       </a>
     );
   } else {
-    function handleClick() {
-      window.open(props.href, '_blank', 'popup=false,nofollow,noopener,noreferrer');
+    const ref = useRef<HTMLDivElement | null>(null);
+
+    function handleClick(e: MouseEvent) {
+      let el = e.target;
+      while (
+        el instanceof HTMLElement &&
+        !(el instanceof HTMLAnchorElement) &&
+        el.parentElement &&
+        el !== ref.current
+      ) {
+        el = el.parentElement;
+      }
+
+      if (el === ref.current) {
+        e.stopPropagation();
+        window.open(props.href, '_blank', 'popup=false,nofollow,noopener,noreferrer');
+      }
     }
 
     return (
-      <div tabIndex={0} style={{ cursor: 'pointer' }} onClick={handleClick} {...props}>
+      <div ref={ref} tabIndex={0} style={{ cursor: 'pointer' }} onClick={handleClick} {...props}>
         {children}
       </div>
     );
