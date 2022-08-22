@@ -63,6 +63,9 @@ The expected format looks like this:
         },
         {
           "team": { "$ne": "A Team" }
+        },
+        {
+          "title": { "$inc": "Snyk" }
         }
       ]
     }
@@ -76,6 +79,8 @@ The supported queries are:
 - `$ne`: The value does not equal the given one
 - `$in`: The value is part of the given set
 - `$ni`: The value is not part of the given set
+- `$inc`: The value includes the given string
+- `$exc`: The value excludes the given string
 
 
 [token]: https://github.com/settings/tokens/new

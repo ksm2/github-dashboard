@@ -84,6 +84,12 @@ abstract class Term extends Query {
     if (applies && this.condition.$ni !== undefined) {
       applies = !this.condition.$ni.includes(value);
     }
+    if (applies && this.condition.$inc !== undefined) {
+      applies = value.includes(this.condition.$inc);
+    }
+    if (applies && this.condition.$exc !== undefined) {
+      applies = !value.includes(this.condition.$exc);
+    }
     return applies;
   }
 }
@@ -130,4 +136,6 @@ export interface Condition {
   $ne?: string;
   $in?: string[];
   $ni?: string[];
+  $inc?: string;
+  $exc?: string;
 }
