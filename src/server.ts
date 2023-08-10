@@ -33,7 +33,7 @@ const dirName = path.dirname(fileURLToPath(import.meta.url));
 app.use(express.static(path.join(dirName, '../dist/')));
 
 app.get('/', async (req, res) => {
-  return res.sendFile('index.html', path.join(dirName, '../dist/'));
+  return res.sendFile(path.join(dirName, '../dist/'));
 });
 
 app.get('/api/filters', async (req, res) => {
