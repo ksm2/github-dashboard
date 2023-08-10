@@ -7,6 +7,9 @@ interface Props {
 
 export function StatusDescription({ status }: Props) {
   switch (status) {
+    case Status.DRAFT: {
+      return <LaneHeader>Pull requests in draft</LaneHeader>;
+    }
     case Status.OPEN: {
       return <LaneHeader>Pull requests without a review</LaneHeader>;
     }

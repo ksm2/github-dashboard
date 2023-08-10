@@ -36,6 +36,7 @@ interface LoadPullRequestsPullRequests {
   number: number;
   title: string;
   url: string;
+  isDraft: boolean;
   author: {
     login: string;
     url: string;
@@ -182,6 +183,7 @@ export class GithubClient {
                 number
                 title
                 url
+                isDraft
                 author {
                   login
                   url
@@ -232,6 +234,7 @@ export class GithubClient {
         href: pr.url,
         number: pr.number,
         title: pr.title,
+        draft: pr.isDraft,
         commentCount: pr.comments.totalCount,
         reviewRequests: pr.reviewRequests.nodes
           .map((request) => request.requestedReviewer.login)

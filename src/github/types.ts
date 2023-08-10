@@ -3,6 +3,7 @@ export interface GitHubPullRequest {
   number: number;
   title: string;
   href: string;
+  draft: boolean;
   author: GitHubUser;
   reviews: GitHubReview[];
   reviewRequests: string[];

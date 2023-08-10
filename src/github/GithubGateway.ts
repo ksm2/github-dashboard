@@ -68,6 +68,10 @@ export class GithubGateway implements PullRequestService {
   }
 
   private determineStatus(pr: GitHubPullRequest): Status {
+    if (pr.draft) {
+      return Status.DRAFT;
+    }
+
     if (!pr.reviews.length) {
       return pr.reviewRequests.length ? Status.IN_REVIEW : Status.OPEN;
     }

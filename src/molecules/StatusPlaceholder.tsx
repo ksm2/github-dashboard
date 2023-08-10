@@ -2,6 +2,7 @@ import { LanePlaceholder } from '~/atoms/lanes/LanePlaceholder.js';
 import { CheckCircleIcon } from '~/icons/CheckCircleIcon.js';
 import { DotsCircleIcon } from '~/icons/DotsCircleIcon.js';
 import { ExclamationCircleIcon } from '~/icons/ExclamationCircleIcon.js';
+import { PauseCircleIcon } from '~/icons/PauseCircleIcon.js';
 import { XCircleIcon } from '~/icons/XCircleIcon.js';
 import { Status } from '~/model/Status.js';
 
@@ -11,6 +12,9 @@ interface Props {
 
 export function StatusPlaceholder({ status }: Props) {
   switch (status) {
+    case Status.DRAFT: {
+      return <LanePlaceholder icon={<PauseCircleIcon />}>No draft pull requests</LanePlaceholder>;
+    }
     case Status.OPEN: {
       return (
         <LanePlaceholder icon={<ExclamationCircleIcon />}>
