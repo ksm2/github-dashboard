@@ -1,19 +1,19 @@
 .StatusIcon.Approved {
-  color: #00b300;
+  color: var(--green);
 }
 
 .StatusIcon.Draft {
-  color: slategray;
+  color: var(--gray);
 }
 
 .StatusIcon.Open {
-  color: slategray;
+  color: var(--gray);
 }
 
 .StatusIcon.InReview {
-  color: darkgoldenrod;
+  color: var(--yellow);
 }
 
 .StatusIcon.ChangesRequested {
-  color: #dc1212;
+  color: var(--red);
 }

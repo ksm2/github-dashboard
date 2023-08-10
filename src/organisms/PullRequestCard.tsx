@@ -1,12 +1,16 @@
 import { Card } from '~/atoms/cards/Card.js';
 import { CardFooter } from '~/atoms/cards/CardFooter.js';
 import { CardHeader } from '~/atoms/cards/CardHeader.js';
+import { CheckStatusIcon } from '~/atoms/CheckStatusIcon.js';
 import { IconText } from '~/atoms/IconText.js';
 import { Id } from '~/atoms/Id.js';
 import { Tag } from '~/atoms/tags/Tag.js';
 import { Tags } from '~/atoms/tags/Tags.js';
 import { CheckCircleIcon } from '~/icons/CheckCircleIcon.js';
+import { CheckIcon } from '~/icons/CheckIcon.js';
 import { CommentIcon } from '~/icons/CommentIcon.js';
+import { XIcon } from '~/icons/XIcon.js';
+import { CheckStatus } from '~/model/CheckStatus.js';
 import { PullRequest } from '~/model/PullRequest.js';
 import { AvatarWithName } from '~/molecules/AvatarWithName.js';
 import { RepoLink } from '~/molecules/RepoLink.js';
@@ -35,6 +39,16 @@ export function PullRequestCard({ pullRequest }: Props) {
       <CardFooter>
         <AvatarWithName user={pullRequest.author} />
         <RepoLink repository={pullRequest.repository} />
+        {pullRequest.checkStatus === CheckStatus.SUCCESS && (
+          <CheckStatusIcon checkStatus={CheckStatus.SUCCESS}>
+            <CheckIcon />
+          </CheckStatusIcon>
+        )}
+        {pullRequest.checkStatus === CheckStatus.ERROR && (
+          <CheckStatusIcon checkStatus={CheckStatus.ERROR}>
+            <XIcon />
+          </CheckStatusIcon>
+        )}
         {pullRequest.approvalCount ? (
           <IconText
             icon={<CheckCircleIcon />}

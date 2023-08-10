@@ -4,6 +4,13 @@
   box-sizing: border-box;
 }
 
+:root {
+  --green: #118d11;
+  --gray: #6c8291;
+  --yellow: #c5921c;
+  --red: #dc1212;
+}
+
 body {
   color: #212529;
   margin: 0;

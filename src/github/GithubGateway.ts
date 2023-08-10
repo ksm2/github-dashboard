@@ -39,6 +39,7 @@ export class GithubGateway implements PullRequestService {
         commentCount: this.countComments(pullRequest),
         repository,
         status: this.determineStatus(pullRequest),
+        checkStatus: pullRequest.checkStatus,
         labels: pullRequest.labels,
       }),
     );

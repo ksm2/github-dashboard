@@ -1,5 +1,6 @@
 import { graphql } from '@octokit/graphql';
-import { Repository } from '~/model/Repository.js';
+import { CheckStatus } from '../model/CheckStatus.js';
+import { Repository } from '../model/Repository.js';
 import { GitHubLabel, GitHubPullRequest, GitHubReview } from './types.js';
 
 interface LoadReposQuery {
@@ -48,6 +49,17 @@ interface LoadPullRequestsPullRequests {
     totalCount: number;
   };
   reviews: Connection<LoadPullRequestsReview>;
+  commits: Connection<LoadPullRequestsCommit>;
+}
+
+interface LoadPullRequestsCommit {
+  commit: {
+    statusCheckRollup?: LoadPullRequestsStatusCheckRollup;
+  };
+}
+
+interface LoadPullRequestsStatusCheckRollup {
+  state: string;
 }
 
 interface LoadPullRequestsReview {
@@ -219,6 +231,15 @@ export class GithubClient {
                     }                
                   }
                 }
+                commits(last: 1) {
+                  nodes {
+                    commit {
+                      statusCheckRollup {
+                        state
+                      }
+                    }
+                  }
+                }
               }
             }
           }
@@ -235,6 +256,7 @@ export class GithubClient {
         number: pr.number,
         title: pr.title,
         draft: pr.isDraft,
+        checkStatus: this.mapCheckStatus(pr.commits?.nodes?.at(0)?.commit.statusCheckRollup?.state),
         commentCount: pr.comments.totalCount,
         reviewRequests: pr.reviewRequests.nodes
           .map((request) => request.requestedReviewer.login)
@@ -280,5 +302,24 @@ export class GithubClient {
 
   private static isString(value: unknown): value is string {
     return typeof value === 'string';
+  }
+
+  private mapCheckStatus(state: string | undefined): CheckStatus {
+    switch (state) {
+      case 'FAILURE':
+      case 'ERROR': {
+        return CheckStatus.ERROR;
+      }
+      case 'EXPECTED':
+      case 'PENDING': {
+        return CheckStatus.PENDING;
+      }
+      case 'SUCCESS': {
+        return CheckStatus.SUCCESS;
+      }
+      default: {
+        return CheckStatus.MISSING;
+      }
+    }
   }
 }

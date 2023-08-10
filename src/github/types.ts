@@ -1,9 +1,12 @@
+import { CheckStatus } from '~/model/CheckStatus.js';
+
 export interface GitHubPullRequest {
   id: string;
   number: number;
   title: string;
   href: string;
   draft: boolean;
+  checkStatus: CheckStatus;
   author: GitHubUser;
   reviews: GitHubReview[];
   reviewRequests: string[];

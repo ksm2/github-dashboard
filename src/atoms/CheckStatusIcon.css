@@ -1,0 +1,13 @@
+.CheckStatusIcon {
+  display: inline-flex;
+  flex-flow: row nowrap;
+  align-items: center;
+}
+
+.CheckStatusIcon.SUCCESS {
+  color: var(--green);
+}
+
+.CheckStatusIcon.ERROR {
+  color: var(--red);
+}
