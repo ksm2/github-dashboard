@@ -133,7 +133,7 @@ export class GithubClient {
     const query = `
       query LoadRepos($org: String!, $cursor: String) {
         organization(login: $org) {
-          repositories(first: 100, after: $cursor) {
+          repositories(first: 100, isArchived: false, after: $cursor) {
             pageInfo {
               endCursor
               hasNextPage
